@@ -1,0 +1,81 @@
+#!/bin/sh
+
+# RASPI_MAC="B8:27:EB"
+RASPI_MAC="B8:27:EB:9E:9C:B5"
+MY_LOCAL_IP_SUBNET="10.61.4.0/27"
+
+echo "Setting up Pi WorkStation"
+echo ""
+
+echo "Getting Raspberry Pi IP Address"
+
+#Get the IP address and format it correctly
+# IP="$(sudo nmap -sP $MY_LOCAL_IP_SUBNET | awk '/^Nmap/{ip=$NF}/B8:27:EB:9E:9C:B5/{print ip}') Pi " #KEEP ME, DON'T EDIT ME
+  IP="$(sudo nmap -sP $MY_LOCAL_IP_SUBNET | awk -v mymac="$RASPI_MAC" '/^Nmap/{ip=$NF}$0~mymac{print ip}') Pi"
+
+
+#Get rid of those pesky parentheses that sometimes show up...
+IP=`echo $IP | sed 's/[()]//g'`
+
+### Find if our IP address has been added to the host
+echo "
+Looking to see if the hosts file contains a current entry for the Pi"
+OLD_IP="`grep "Pi" /etc/hosts | awk '{print $1}'` Pi"
+
+if [ "$?" -eq 0 ] 
+then
+	if [ "$IP" = "$OLD_IP" ]
+	then
+		echo "   Address Match, no replacement necessary!"		
+	else
+		echo "   No Address Match, making necessary replacement."
+		sudo sed -ri "s/^ *[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+ Pi/$IP/" /etc/hosts > /dev/null
+
+		if [ "$?" -eq 0 ]
+		then
+			echo "   Successfully rewrote the address!"			
+		else
+			echo "   Error in rewriting."			
+		fi
+	fi
+else
+	echo "No IP address currently existing in /etc/hosts for the Pi.  Adding it."
+	sudo echo $IP >> /etc/hosts
+fi
+
+echo "OLD:   $OLD_IP"
+echo "CUR:   $IP
+"
+
+sudo fusermount -u ~/Pi/ > /dev/null
+sshfs pi@Pi:/home/pi/ ~/Pi/
+
+#echo $VAR | sed 's/\(*[0-9]+\.[0-9]\+\.[0-9]+\.[0-9]+)/g'
+#IP=$(sudo nmap -sP $MY_LOCAL_IP_SUBNET | awk -v mymac="$MY_MAC" '/^Nmap/{ip=$NF}$0~mymac{print ip}')
+# IP=$(sudo nmap -sP $MY_LOCAL_IP_SUBNET | awk -v mymac="$MY_MAC" '/^Nmap/{ip=$NF}$0~mymac{print ip}')
+# IP=`echo "$IP" | sed 's/[()]//g'`
+
+#IP=`sudo nmap -sP $MY_LOCAL_IP_SUBNET | awk -v mac="$RASPI_MAC" '/^Nmap/{ip=$NF}/~/mac///{print ip}'`
+
+###THIS GUY WILL STATICALLY SEARCH FOR YOUR LOCAL SUBNET FOR A SPECIFIC MAC.  ALL RASPBERRY PI'S START WITH THE FIRST THREE GROUPINGS
+# IP="`sudo nmap -sP 10.61.4.0/24 | awk '/^Nmap/{ip=$NF}/B8:27:EB:9E:9C:B5/{print ip}'` Pi " #KEEP ME, DON'T EDIT ME
+
+# IP=`sudo nmap -sP $MY_LOCAL_IP_SUBNET | awk '/^Nmap/{ip=$NF}/$RASPI_MAC/{print ip}'`
+
+# COMMAND="sudo nmap -sP $MY_LOCAL_IP_SUBNET | awk '/^Nmap/{ip=$NF}/$RASPI_MAC/{print ip}'"
+# IP="`sudo nmap -sP 10.61.4.0/24 | awk '/^Nmap/{ip=$NF}/$RASPI_MAC/{print ip}'`"
+# IP=`$COMMAND`
+
+# # echo $COMMAND
+# echo "Trying.."
+# IP=`awk -v var="$IP" '{print $1}'`
+# echo $IP
+
+#echo $VAR | sed 's/[()]//g'
+
+#IP="(10.61.4.12) Pi"
+# IP=echo $PI | sed 's/[()]//g'
+
+#IP=`echo $IP | sed 's/[()]//g'`
+
+#echo $IP
